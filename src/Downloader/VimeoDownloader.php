@@ -3,6 +3,7 @@
 namespace Jackal\Downloader\Ext\Vimeo\Downloader;
 
 use Jackal\Downloader\Downloader\AbstractDownloader;
+use Jackal\Downloader\Ext\Vimeo\Exception\VimeoDownloadException;
 
 class VimeoDownloader extends AbstractDownloader
 {
@@ -10,26 +11,20 @@ class VimeoDownloader extends AbstractDownloader
 
     public function getURL(): string
     {
-        $decode_to_arr = json_decode($this->getVideoInfo(), true);
-        $title = $decode_to_arr['video']['title'];
-        $link_array = $decode_to_arr['request']['files']['progressive'];
-        $final_link_arr = [];
+        $videos = $this->getVideoInfo();
 
-        //Create array containing the detail of video
-        for ($i = 0; $i < count($link_array); $i++) {
-            $link_array[$i]['title'] = $title;
-            $mime = explode('/', $link_array[$i]['mime']);
-            $link_array[$i]['format'] = $mime[1];
-        }
-
-        $links = array_reduce($link_array, function ($vimeoVideos, $currentVimeoVideo) {
+        $links = array_reduce($videos, function ($vimeoVideos, $currentVimeoVideo) {
             $quality = substr($currentVimeoVideo['quality'], 0, -1);
             $vimeoVideos[$quality] = $currentVimeoVideo['url'];
 
             return $vimeoVideos;
-        });
+        }, []);
 
-        ksort($links);
+        ksort($links, SORT_NUMERIC);
+
+        if ($links == []) {
+            throw VimeoDownloadException::videoURLsNotFound();
+        }
 
         if ($this->getFormat() and !isset($links[$this->getFormat()])) {
             throw new \Exception(
@@ -46,45 +41,45 @@ class VimeoDownloader extends AbstractDownloader
 
     protected function getFormat() : ?string
     {
-        return $this->options['format'];
+        return isset($this->options['format']) ? $this->options['format'] : null;
     }
 
-    /////////////////////////////////////////////////
-    /*
-    * Get the video information
-    * return string
-    */
 
-    private function getVideoInfo()
+    private function getVideoInfo() : array
     {
-        return file_get_contents($this->getRequestedUrl());
+        $requestUrl = $this->getRequestedUrl();
+        $requestUrlContent = file_get_contents($requestUrl);
+        $decode_to_arr = json_decode($requestUrlContent, true);
+
+        $contentToReturn = @$decode_to_arr['request']['files']['progressive'];
+        if (!$decode_to_arr or !is_array($contentToReturn)) {
+            throw VimeoDownloadException::unableToParseContent($requestUrl, $requestUrlContent);
+        }
+        return $contentToReturn;
     }
 
-    /*
-     * Get video Id
-     * @param string
-     * return string
-     */
-
-    private function extractVideoId($video_url)
+    private function getRequestedUrl() : string
     {
-        $start_position = stripos($video_url, '.com/');
+        $originUrl = 'https://www.vimeo.com/' . $this->getVideoId();
+        $data = file_get_contents($originUrl);
 
-        return ltrim(substr($video_url, $start_position), '.com/');
+        $url = $this->executeRegex($data, '/"config_url"\:"(.*)"/U');
+        $url = trim(str_replace('\\/', '/', $url));
+
+        if (!$url or !filter_var($url, FILTER_VALIDATE_URL)) {
+            throw VimeoDownloadException::unableToParseContent($originUrl, $url);
+        }
+
+        return $url;
     }
 
-    /*
-     * Scrap the url from the page
-     * return string
-     */
-    private function getRequestedUrl()
+    protected function executeRegex($string, $regex, $group = 1) : ?string
     {
-        $data = file_get_contents('https://www.vimeo.com/' . $this->extractVideoId($this->getVideoId()));
-        $data = stristr($data, 'config_url":"');
-        $start = substr($data, strlen('config_url":"'));
-        $stop = stripos($start, ',');
-        $str = substr($start, 0, $stop);
+        preg_match($regex, $string, $matches);
+        if (!array_key_exists($group, $matches)) {
+            return null;
+        }
 
-        return rtrim(str_replace('\\', '', $str), '"');
+        return $matches[$group];
     }
 }
