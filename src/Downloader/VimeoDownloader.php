@@ -16,25 +16,27 @@ class VimeoDownloader extends AbstractDownloader
         $final_link_arr = [];
 
         //Create array containing the detail of video
-        for($i = 0; $i < count($link_array); $i++) {
+        for ($i = 0; $i < count($link_array); $i++) {
             $link_array[$i]['title'] = $title;
             $mime = explode('/', $link_array[$i]['mime']);
             $link_array[$i]['format'] = $mime[1];
         }
 
-        $links = array_reduce($link_array, function ($vimeoVideos, $currentVimeoVideo){
-                $quality = substr($currentVimeoVideo['quality'], 0, -1);
-                $vimeoVideos[$quality] = $currentVimeoVideo['url'];
+        $links = array_reduce($link_array, function ($vimeoVideos, $currentVimeoVideo) {
+            $quality = substr($currentVimeoVideo['quality'], 0, -1);
+            $vimeoVideos[$quality] = $currentVimeoVideo['url'];
 
-                return $vimeoVideos;
+            return $vimeoVideos;
         });
 
         ksort($links);
 
-        if($this->getFormat() and !isset($links[$this->getFormat()])){
+        if ($this->getFormat() and !isset($links[$this->getFormat()])) {
             throw new \Exception(
-                sprintf('Format %s is not available. [Available formats are: %s]',
-                    $this->getFormat(), implode(', ', array_keys($links))
+                sprintf(
+                    'Format %s is not available. [Available formats are: %s]',
+                    $this->getFormat(),
+                    implode(', ', array_keys($links))
                 )
             );
         }
@@ -42,7 +44,8 @@ class VimeoDownloader extends AbstractDownloader
         return $this->getFormat() ? $links[$this->getFormat()] : end($links);
     }
 
-    protected function getFormat() : ?string {
+    protected function getFormat() : ?string
+    {
         return $this->options['format'];
     }
 
@@ -52,7 +55,8 @@ class VimeoDownloader extends AbstractDownloader
     * return string
     */
 
-    private function getVideoInfo() {
+    private function getVideoInfo()
+    {
         return file_get_contents($this->getRequestedUrl());
     }
 

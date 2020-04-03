@@ -1,1 +1,1 @@
-# VideoDownloaderYoutubeExtension
+# VideoDownloaderVimeoExtension
