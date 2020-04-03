@@ -12,6 +12,7 @@ class VimeoDownloader extends AbstractDownloader
     public function getURL(): string
     {
         $videos = $this->getVideoInfo();
+        $selectedFormats = $this->getFormats();
 
         $links = array_reduce($videos, function ($vimeoVideos, $currentVimeoVideo) {
             $quality = substr($currentVimeoVideo['quality'], 0, -1);
@@ -26,24 +27,32 @@ class VimeoDownloader extends AbstractDownloader
             throw VimeoDownloadException::videoURLsNotFound();
         }
 
-        if ($this->getFormat() and !isset($links[$this->getFormat()])) {
-            throw new \Exception(
-                sprintf(
-                    'Format %s is not available. [Available formats are: %s]',
-                    $this->getFormat(),
-                    implode(', ', array_keys($links))
-                )
-            );
+        if($selectedFormats != []) {
+            foreach ($selectedFormats as $selectedFormat) {
+                if (array_key_exists($selectedFormat, $links)) {
+                    return $links[$selectedFormat];
+                }
+            }
+
+            throw VimeoDownloadException::formatNotFound($selectedFormats, $links);
         }
 
-        return $this->getFormat() ? $links[$this->getFormat()] : end($links);
+        return array_values($links)[0];
     }
 
-    protected function getFormat() : ?string
+    protected function getFormats() : array
     {
-        return isset($this->options['format']) ? $this->options['format'] : null;
-    }
+        if(!isset($this->options['format'])){
+            return [];
+        }
 
+        if(!is_array($this->options['format'])){
+            return [$this->options['format']];
+        }
+
+        return $this->options['format'];
+
+    }
 
     private function getVideoInfo() : array
     {
@@ -55,6 +64,7 @@ class VimeoDownloader extends AbstractDownloader
         if (!$decode_to_arr or !is_array($contentToReturn)) {
             throw VimeoDownloadException::unableToParseContent($requestUrl, $requestUrlContent);
         }
+
         return $contentToReturn;
     }
 
