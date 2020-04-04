@@ -5,7 +5,7 @@
   "license": "MIT",
   "require": {
     "php": ">=7.1",
-    "jackal/video-downloader": "^0.3",
+    "jackal/video-downloader": "^0.4",
     "ext-json": "*"
   },
   "require-dev": {
@@ -27,7 +27,8 @@
     "hooks": {
       "pre-commit": [
         "echo Committing as $(git config user.name) [$(git config user.email)]",
-        "vendor/bin/php-cs-fixer fix . --config=.php-cs"
+        "vendor/bin/php-cs-fixer fix . --config=.php-cs",
+        "sleep 1"
       ],
       "pre-push": [
         "vendor/bin/phpunit tests/"

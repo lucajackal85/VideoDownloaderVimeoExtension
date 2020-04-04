@@ -15,14 +15,4 @@ class VimeoDownloadException extends DownloadException
     {
         return new VimeoDownloadException('No video URLs found');
     }
-
-    public static function formatNotFound(array $selectedFormats, array $available)
-    {
-        return new VimeoDownloadException(sprintf(
-            'Format%s %s is not available. [Available formats are: %s]',
-            count($selectedFormats) == 1 ? '' : 's',
-            implode(', ', $selectedFormats),
-            implode(', ', array_keys($available))
-        ));
-    }
 }
