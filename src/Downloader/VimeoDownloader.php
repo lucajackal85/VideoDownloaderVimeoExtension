@@ -11,10 +11,8 @@ class VimeoDownloader extends AbstractDownloader
 
     public function getURL(): string
     {
-        $videos = $this->getVideoInfo();
-        $selectedFormats = $this->getFormats();
 
-        $links = array_reduce($videos, function ($vimeoVideos, $currentVimeoVideo) {
+        $links = array_reduce($this->getVideoInfo(), function ($vimeoVideos, $currentVimeoVideo) {
             $quality = substr($currentVimeoVideo['quality'], 0, -1);
             $vimeoVideos[$quality] = $currentVimeoVideo['url'];
 
@@ -27,31 +25,9 @@ class VimeoDownloader extends AbstractDownloader
             throw VimeoDownloadException::videoURLsNotFound();
         }
 
-        if($selectedFormats != []) {
-            foreach ($selectedFormats as $selectedFormat) {
-                if (array_key_exists($selectedFormat, $links)) {
-                    return $links[$selectedFormat];
-                }
-            }
-
-            throw VimeoDownloadException::formatNotFound($selectedFormats, $links);
-        }
+        $links = $this->filterByFormats($links);
 
         return array_values($links)[0];
-    }
-
-    protected function getFormats() : array
-    {
-        if(!isset($this->options['format'])){
-            return [];
-        }
-
-        if(!is_array($this->options['format'])){
-            return [$this->options['format']];
-        }
-
-        return $this->options['format'];
-
     }
 
     private function getVideoInfo() : array
