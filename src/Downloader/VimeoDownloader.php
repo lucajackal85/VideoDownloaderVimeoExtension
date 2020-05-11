@@ -7,8 +7,6 @@ use Jackal\Downloader\Ext\Vimeo\Exception\VimeoDownloadException;
 
 class VimeoDownloader extends AbstractDownloader
 {
-    const VIDEO_TYPE = 'vimeo';
-
     public function getURL(): string
     {
 
@@ -67,5 +65,15 @@ class VimeoDownloader extends AbstractDownloader
         }
 
         return $matches[$group];
+    }
+
+    public static function getPublicUrlRegex(): string
+    {
+        return '/vimeo\.com(?:\/video\/|\/)(\d+)/i';
+    }
+
+    public static function getType(): string
+    {
+        return 'vimeo';
     }
 }

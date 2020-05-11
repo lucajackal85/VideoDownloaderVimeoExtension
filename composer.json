@@ -5,7 +5,7 @@
   "license": "MIT",
   "require": {
     "php": ">=7.1",
-    "jackal/video-downloader": "^0.4",
+    "jackal/video-downloader": "dev-development",
     "ext-json": "*"
   },
   "require-dev": {
