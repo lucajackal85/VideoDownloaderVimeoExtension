@@ -7,25 +7,25 @@ use Jackal\Downloader\Ext\Vimeo\Exception\VimeoDownloadException;
 
 class VimeoDownloader extends AbstractDownloader
 {
-    public function getURL(): string
-    {
+    protected $downloadLinks = [];
 
-        $links = array_reduce($this->getVideoInfo(), function ($vimeoVideos, $currentVimeoVideo) {
-            $quality = substr($currentVimeoVideo['quality'], 0, -1);
-            $vimeoVideos[$quality] = $currentVimeoVideo['url'];
+    protected function getDownloadLinks(){
+        if($this->downloadLinks == []){
+            $this->downloadLinks = array_reduce($this->getVideoInfo(), function ($vimeoVideos, $currentVimeoVideo) {
+                $quality = substr($currentVimeoVideo['quality'], 0, -1);
+                $vimeoVideos[$quality] = $currentVimeoVideo['url'];
 
-            return $vimeoVideos;
-        }, []);
+                return $vimeoVideos;
+            }, []);
 
-        ksort($links, SORT_NUMERIC);
+            ksort($this->downloadLinks, SORT_NUMERIC);
 
-        if ($links == []) {
-            throw VimeoDownloadException::videoURLsNotFound();
+            if ($this->downloadLinks == []) {
+                throw VimeoDownloadException::videoURLsNotFound();
+            }
         }
 
-        $links = $this->filterByFormats($links);
-
-        return array_values($links)[0];
+        return $this->downloadLinks;
     }
 
     private function getVideoInfo() : array
@@ -65,6 +65,23 @@ class VimeoDownloader extends AbstractDownloader
         }
 
         return $matches[$group];
+    }
+
+    /**
+     * @return string
+     * @throws VimeoDownloadException
+     * @throws \Jackal\Downloader\Exception\DownloadException
+     */
+    public function getURL(): string
+    {
+        $links = $this->filterByFormats($this->getDownloadLinks());
+
+        return array_values($links)[0];
+    }
+
+    public function getFormatsAvailable(): array
+    {
+        return array_keys($this->getDownloadLinks());
     }
 
     public static function getPublicUrlRegex(): string
